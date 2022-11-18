@@ -1,5 +1,9 @@
 # cognito-serverless-mkdocs
 
+[Japanese Blog Link](https://yomon.hatenablog.com/entry/2022/11/mkdocs_serverless) about this repo. 
+
+
+
 ![](image.drawio.png)
 
 ## Requirement
