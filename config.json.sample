@@ -1,0 +1,9 @@
+{
+    "bucketName": "YOUR_NEW_S3_BUCKET_NAME",
+    "cognito": {
+        "region": "AWS_REGION",
+        "userPoolId": "COGNITO_USERPOOL_ID",
+        "userPoolAppId": "COGNITO_APPLICATION_ID",
+        "userPoolDomain": "xxxxx.ap-northeast-1.amazoncognito.com"
+    }
+}

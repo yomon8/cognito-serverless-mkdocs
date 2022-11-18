@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "cognito-at-edge": "^1.2.2"
+  },
+  "devDependencies": {
+    "@silvermine/serverless-plugin-cloudfront-lambda-edge": "2.2.3"
+  }
+}

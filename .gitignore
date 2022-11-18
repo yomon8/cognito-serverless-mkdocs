@@ -1,0 +1,4 @@
+.serverless/
+mkdocs/site
+mkdocs/.venv
+node_modules/

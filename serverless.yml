@@ -1,0 +1,107 @@
+service: cognito-serverless-mkdocs
+
+frameworkVersion: "3"
+
+package:
+  patterns:
+    - "!./**"
+    - "node_modules/**"
+    - "cognito-auth.js"
+    - "config.json"
+
+plugins:
+  - "@silvermine/serverless-plugin-cloudfront-lambda-edge"
+
+custom:
+  config: ${file(./config.json)}
+  bucketName: ${self:custom.config.bucketName}
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: nodejs16.x
+
+functions:
+  cognitoAuth:
+    handler: cognito-auth.handler
+    memorySize: 128
+    timeout: 1
+    lambdaAtEdge:
+      distribution: CloudFront
+      eventType: viewer-request
+
+resources:
+  Resources:
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - BucketKeyEnabled: true
+              ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
+        BucketName: ${self:custom.bucketName}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: True
+
+    CloudFrontOAI:
+      Type: AWS::CloudFront::OriginAccessControl
+      Properties:
+        OriginAccessControlConfig:
+          Description: Access Control
+          Name: CloudFrontOAI
+          OriginAccessControlOriginType: s3
+          SigningBehavior: always
+          SigningProtocol: sigv4
+
+    CloudFront:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          DefaultRootObject: index.html
+          Origins:
+            - DomainName: !GetAtt S3Bucket.DomainName
+              Id: S3
+              OriginAccessControlId: !GetAtt CloudFrontOAI.Id
+              S3OriginConfig:
+                OriginAccessIdentity: ""
+          DefaultCacheBehavior:
+            TargetOriginId: S3
+            Compress: true
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+          Enabled: true
+          PriceClass: PriceClass_200
+
+    S3BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref S3Bucket
+        PolicyDocument:
+          Version: "2008-10-17"
+          Statement:
+            - Sid: AllowCloudFrontServicePrincipal
+              Effect: "Allow"
+              Principal:
+                Service:
+                  - "cloudfront.amazonaws.com"
+              Action:
+                - "s3:GetObject"
+              Resource:
+                - !Sub ${S3Bucket.Arn}/*
+              Condition:
+                StringEquals:
+                  AWS:SourceArn:
+                    - !Join
+                      - ""
+                      - - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/"
+                        - !GetAtt CloudFront.Id
